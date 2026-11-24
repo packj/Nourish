@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Manage {{ m_set.name }} Calendar - Nourish Admin{% endblock %}
+
+{% block content %}
+<div class="admin-calendar-page">
+    <div class="admin-header-row">
+        <div>
+            <div class="eyebrow">Calendar Management</div>
+            <h1>{{ m_set.name }}</h1>
+        </div>
+        <div class="admin-actions">
+            <a href="{{ url_for('public.view_set_calendar', slug=m_set.slug) }}" target="_blank" class="btn btn-outline">
+                👁️ View Public Member Calendar
+            </a>
+            <form method="POST" action="{{ url_for('admin.trigger_sync', set_id=m_set.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn-primary">🔄 Sync to Google Sheet</button>
+            </form>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">&larr; Back</a>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Main Column: All Bookings -->
+        <div class="grid-main">
+            <div class="card mb-4">
+                <div class="card-header-flex">
+                    <h2>Dinner Bookings ({{ bookings|length }})</h2>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Host Name</th>
+                                <th>Phone</th>
+                                <th>Dining Plan</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in bookings %}
+                            <tr class="{% if b.status == 'cancelled' %}row-dimmed{% endif %}">
+                                <td class="font-bold">{{ b.meal_date }}</td>
+                                <td>
+                                    {% if b.status == 'confirmed' %}
+                                        <span class="badge badge-success">Confirmed</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ b.meal_time }}</td>
+                                <td>
+                                    {{ b.host_name }}
+                                    {% if b.notes %}<div class="text-xs text-muted">Notes: {{ b.notes }}</div>{% endif %}
+                                </td>
+                                <td>{{ b.host_phone }}</td>
+                                <td>
+                                    {% if b.location_type == 'home' %}At Home
+                                    {% elif b.location_type == 'delivery' %}Apartment Drop-off
+                                    {% elif b.location_type == 'church' %}Church
+                                    {% else %}{{ b.location_type|capitalize }}
+                                    {% endif %}
+                                    {% if b.address %}<div class="text-xs text-muted">{{ b.address }}</div>{% endif %}
+                                </td>
+                                <td>
+                                    {% if b.status == 'confirmed' %}
+                                    <form method="POST" action="{{ url_for('admin.admin_cancel_booking', booking_id=b.id) }}" onsubmit="return confirm('Cancel this dinner booking?');">
+                                        <button type="submit" class="btn btn-xs btn-danger">Cancel</button>
+                                    </form>
+                                    {% else %}
+                                        <span class="text-muted text-xs">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">No dinner sign-ups found for this calendar yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Manual Admin Booking Form -->
+            <div class="card">
+                <h3>+ Manually Add / Override a Meal Booking</h3>
+                <p class="text-muted text-sm">Use this if a ward member calls or asks in person to sign up for a date.</p>
+
+                <form method="POST" action="{{ url_for('admin.admin_add_booking', set_id=m_set.id) }}" class="form-standard mt-3">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="admin-date">Date *</label>
+                            <input type="date" id="admin-date" name="meal_date" required min="{{ today }}" class="form-control">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="admin-time">Time</label>
+                            <input type="text" id="admin-time" name="meal_time" value="{{ m_set.default_time or '5:00 PM' }}" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="admin-host">Host Name *</label>
+                            <input type="text" id="admin-host" name="host_name" required placeholder="e.g. Brother & Sister Davis" class="form-control">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="admin-phone">Phone Number *</label>
+                            <input type="tel" id="admin-phone" name="host_phone" required placeholder="801-555-4321" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="admin-loc">Location</label>
+                            <select id="admin-loc" name="location_type" class="form-control">
+                                <option value="home">At Host Home</option>
+                                <option value="delivery">Drop off at apartment</option>
+                                <option value="church">Church building</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="admin-address">Address</label>
+                            <input type="text" id="admin-address" name="address" placeholder="123 Oak St" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="admin-notes">Notes</label>
+                        <input type="text" id="admin-notes" name="notes" placeholder="Pot roast, salad" class="form-control">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add Booking</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar Column: Blackout / Unavailable Dates -->
+        <div class="grid-side">
+            <div class="card mb-4">
+                <h3>Block Unavailable Dates</h3>
+                <p class="text-muted text-sm">Mark dates unavailable for District Conferences, Exchanges, Zone Conferences, or Holidays.</p>
+
+                <form method="POST" action="{{ url_for('admin.add_blackout', set_id=m_set.id) }}" class="form-standard mt-3">
+                    <div class="form-group">
+                        <label for="blocked_date">Date to Block *</label>
+                        <input type="date" id="blocked_date" name="blocked_date" required min="{{ today }}" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reason">Reason (visible to members)</label>
+                        <input type="text" id="reason" name="reason" placeholder="e.g. Zone Conference or Exchanges" class="form-control" value="Unavailable">
+                    </div>
+
+                    <button type="submit" class="btn btn-secondary btn-block">Block Date</button>
+                </form>
+
+                <hr class="my-4">
+
+                <h4>Blocked Dates ({{ blackouts|length }})</h4>
+                <ul class="blackout-list">
+                    {% for bl in blackouts %}
+                    <li class="blackout-item">
+                        <div>
+                            <strong>{{ bl.blocked_date }}</strong>
+                            <div class="text-xs text-muted">{{ bl.reason }}</div>
+                        </div>
+                        <form method="POST" action="{{ url_for('admin.delete_blackout', blackout_id=bl.id) }}">
+                            <button type="submit" class="btn btn-xs btn-outline" title="Unblock Date">&times;</button>
+                        </form>
+                    </li>
+                    {% else %}
+                    <li class="text-muted text-sm py-2">No blackout dates added.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

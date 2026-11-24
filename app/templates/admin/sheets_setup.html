@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Google Sheets Setup Guide - Nourish Admin{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-header-row">
+        <div>
+            <div class="eyebrow">Integration Guide</div>
+            <h1>Google Sheets Auto-Sync Setup</h1>
+            <p class="text-muted">How to automatically push dinner sign-ups to missionary devices in 2 minutes.</p>
+        </div>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline">&larr; Back to Dashboard</a>
+    </div>
+
+    <div class="card mb-4">
+        <h2>Why Google Sheets?</h2>
+        <p>
+            Missionary smartphones and tablets use Church Mobile Device Management (MDM) security profiles (like Maas360 or Samsung Knox), which heavily restrict browsing to general internet websites. However, the <strong>Google Sheets app</strong> is universally whitelisted and accessible to missionaries.
+        </p>
+        <p>
+            With Nourish, whenever a ward member signs up for a dinner, changes their time, or leaves dietary notes, Nourish immediately writes the entry into their Google Sheet so the missionaries see their updated calendar instantly on their phones!
+        </p>
+    </div>
+
+    <div class="card mb-4">
+        <h2>Quick Setup via Google Apps Script (Recommended)</h2>
+        <p>You don't need to configure Google Cloud Console, API keys, or service accounts. Just follow these steps:</p>
+
+        <ol class="step-list">
+            <li>
+                <strong>Create a Google Sheet:</strong>
+                <p>Go to <a href="https://sheets.new" target="_blank">sheets.new</a> and create a spreadsheet (e.g. <em>"Elders Dinner Calendar"</em>). Share read/edit access with the missionaries' Gmail accounts.</p>
+            </li>
+            <li>
+                <strong>Open Apps Script:</strong>
+                <p>In your spreadsheet menu bar, click <strong>Extensions &gt; Apps Script</strong>.</p>
+            </li>
+            <li>
+                <strong>Paste the Code:</strong>
+                <p>Delete any existing code in the script editor, and paste the code block below:</p>
+                <div class="code-block-wrapper">
+                    <button class="btn btn-xs btn-light copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('script-source').innerText); alert('Copied to clipboard!');">Copy Code</button>
+                    <pre><code id="script-source">{{ script_template }}</code></pre>
+                </div>
+            </li>
+            <li>
+                <strong>Deploy as Web App:</strong>
+                <p>Click the blue <strong>Deploy</strong> button (top right) &gt; <strong>New deployment</strong>.</p>
+                <ul>
+                    <li>Click the gear icon next to "Select type" and choose <strong>Web app</strong>.</li>
+                    <li><strong>Description:</strong> Nourish Calendar Sync</li>
+                    <li><strong>Execute as:</strong> Me (your account)</li>
+                    <li><strong>Who has access:</strong> Anyone (required so Nourish can POST updates)</li>
+                    <li>Click <strong>Deploy</strong> and approve permissions if prompted.</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Copy the Web App URL into Nourish:</strong>
+                <p>Copy the generated Web App URL (starts with <code>https://script.google.com/macros/s/.../exec</code>) and paste it into the <strong>Google Apps Script Webhook URL</strong> field of the companionship in Nourish.</p>
+            </li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

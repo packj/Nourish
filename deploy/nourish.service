@@ -1,0 +1,25 @@
+[Unit]
+Description=Nourish - Missionary Dinner Calendar Gunicorn Service
+After=network.target
+
+[Service]
+# User and Group under which the service runs on EC2 (e.g. ubuntu, ec2-user, or packj)
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/Nourish
+Environment="PATH=/home/ubuntu/Nourish/venv/bin:/usr/local/bin:/usr/bin"
+EnvironmentFile=/home/ubuntu/Nourish/.env
+
+# Gunicorn execution command
+ExecStart=/home/ubuntu/Nourish/venv/bin/gunicorn \
+    --workers 3 \
+    --bind 127.0.0.1:8002 \
+    --access-logfile /var/log/nourish/access.log \
+    --error-logfile /var/log/nourish/error.log \
+    wsgi:app
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

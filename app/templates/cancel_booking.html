@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Cancel Meal Sign-Up - Nourish{% endblock %}
+
+{% block content %}
+<div class="confirm-container">
+    <div class="card">
+        <h2>Cancel Meal Sign-Up</h2>
+        <p class="text-muted">
+            Are you sure you want to cancel your dinner sign-up for <strong>{{ booking.set_name }}</strong> on <strong>{{ booking.meal_date }}</strong>?
+        </p>
+
+        <form method="POST" action="{{ url_for('public.cancel_booking', booking_id=booking.id) }}" class="form-standard">
+            <div class="form-group">
+                <label for="code">Cancellation PIN / Code:</label>
+                <input type="text" id="code" name="code" value="{{ code }}" required class="form-control" style="text-transform: uppercase;">
+                <small class="form-text">This was provided to you on your confirmation screen.</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                <a href="{{ url_for('public.view_set_calendar', slug=booking.set_slug) }}" class="btn btn-secondary">Keep Sign-up</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

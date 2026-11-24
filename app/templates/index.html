@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Choose a Companionship - Nourish{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <h1>Feed the Missionaries</h1>
+    <p class="subtitle">Select a missionary companionship below to view their dinner calendar and sign up for an open date.</p>
+</div>
+
+<div class="companionship-grid">
+    {% for s in sets %}
+    <div class="card companion-card">
+        <div class="card-badge">Active Calendar</div>
+        <h2>{{ s.name }}</h2>
+        
+        <div class="companion-details">
+            {% if s.phone %}
+            <div class="detail-row">
+                <span class="detail-icon">📞</span>
+                <span><strong>Phone:</strong> {{ s.phone }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="detail-row">
+                <span class="detail-icon">⏰</span>
+                <span><strong>Dinner Time:</strong> {{ s.default_time or '5:00 PM' }}</span>
+            </div>
+
+            {% if s.dietary_restrictions %}
+            <div class="detail-row warning-box">
+                <span class="detail-icon">⚠️</span>
+                <span><strong>Allergies / Notes:</strong> {{ s.dietary_restrictions }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card-actions">
+            <a href="{{ url_for('public.view_set_calendar', slug=s.slug) }}" class="btn btn-primary btn-block">
+                View Calendar & Sign Up &rarr;
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

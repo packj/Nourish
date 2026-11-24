@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login - Nourish{% endblock %}
+
+{% block content %}
+<div class="confirm-container">
+    <div class="card login-card">
+        <div class="login-header">
+            <span class="login-icon">🔒</span>
+            <h2>Admin Login</h2>
+            <p class="text-muted">Enter the administrator password to manage missionary calendars and sync settings.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin.login', next=request.args.get('next')) }}" class="form-standard">
+            <div class="form-group">
+                <label for="password">Admin Password</label>
+                <input type="password" id="password" name="password" required autofocus class="form-control" placeholder="••••••••">
+            </div>
+
+            <div class="form-actions mt-4">
+                <button type="submit" class="btn btn-primary btn-block">Log In &rarr;</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

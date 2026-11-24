@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}{{ current_set.name }} Calendar - Nourish{% endblock %}
+
+{% block content %}
+<div class="calendar-page">
+    <!-- Companionship Switcher if multiple exist -->
+    {% if all_sets|length > 1 %}
+    <div class="set-tabs">
+        {% for s in all_sets %}
+            <a href="{{ url_for('public.view_set_calendar', slug=s.slug, year=year, month=month) }}"
+               class="set-tab-btn {% if s.slug == current_set.slug %}active{% endif %}">
+                {{ s.name }}
+            </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Missionary Information Card -->
+    <div class="card companion-info-header">
+        <div class="companion-title-area">
+            <h1>{{ current_set.name }}</h1>
+            <div class="companion-quick-stats">
+                {% if current_set.phone %}
+                    <span class="badge badge-light">📞 {{ current_set.phone }}</span>
+                {% endif %}
+                <span class="badge badge-light">⏰ Default Time: {{ current_set.default_time or '5:00 PM' }}</span>
+            </div>
+        </div>
+
+        {% if current_set.dietary_restrictions %}
+        <div class="dietary-callout">
+            <span class="dietary-icon">⚠️</span>
+            <div>
+                <strong>Dietary Restrictions & Allergies:</strong>
+                <p>{{ current_set.dietary_restrictions }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if current_set.notes %}
+        <p class="set-message-note">{{ current_set.notes }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Calendar Month Navigation Controls -->
+    <div class="calendar-controls">
+        <div class="month-nav">
+            <button id="prev-month-btn" class="btn btn-outline" title="Previous Month">&larr; Previous</button>
+            <h2 id="calendar-month-title" class="current-month-heading">Loading...</h2>
+            <button id="next-month-btn" class="btn btn-outline" title="Next Month">Next &rarr;</button>
+        </div>
+
+        <div class="view-toggles">
+            <button id="view-today-btn" class="btn btn-sm btn-light">Today</button>
+            <div class="legend">
+                <span class="legend-item"><span class="dot dot-open"></span> Open</span>
+                <span class="legend-item"><span class="dot dot-booked"></span> Booked</span>
+                <span class="legend-item"><span class="dot dot-blocked"></span> Blocked</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Grid Container -->
+    <div class="calendar-container card">
+        <div class="calendar-weekdays">
+            <div>Sun</div>
+            <div>Mon</div>
+            <div>Tue</div>
+            <div>Wed</div>
+            <div>Thu</div>
+            <div>Fri</div>
+            <div>Sat</div>
+        </div>
+        <div id="calendar-grid" class="calendar-days-grid">
+            <div class="loading-spinner">Loading calendar dates...</div>
+        </div>
+    </div>
+
+    <!-- Mobile Scrollable Day List View (below grid for accessibility) -->
+    <div class="calendar-list-view card mt-4">
+        <h3>Upcoming Open Slots</h3>
+        <div id="upcoming-open-list" class="open-slots-list">
+            <!-- Populated via JS -->
+        </div>
+    </div>
+</div>
+
+<!-- Booking Modal Dialog -->
+<div id="booking-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div>
+                <span class="modal-eyebrow">Sign Up to Feed {{ current_set.name }}</span>
+                <h2 id="modal-date-display">Date</h2>
+            </div>
+            <button id="close-modal-btn" class="close-btn" aria-label="Close dialog">&times;</button>
+        </div>
+
+        {% if current_set.dietary_restrictions %}
+        <div class="dietary-callout-sm">
+            <strong>Dietary Reminder:</strong> {{ current_set.dietary_restrictions }}
+        </div>
+        {% endif %}
+
+        <form id="booking-form" method="POST" action="{{ url_for('public.book_meal', slug=current_set.slug) }}">
+            <input type="hidden" id="form-meal-date" name="meal_date" value="">
+
+            <div class="form-row">
+                <div class="form-group flex-1">
+                    <label for="form-host-name">Your Name (or Family Name) *</label>
+                    <input type="text" id="form-host-name" name="host_name" required class="form-control" placeholder="e.g. The Johnsons or Brother Smith">
+                </div>
+                <div class="form-group flex-1">
+                    <label for="form-host-phone">Phone Number *</label>
+                    <input type="tel" id="form-host-phone" name="host_phone" required class="form-control" placeholder="e.g. 801-555-1234">
+                    <small class="form-text">For the missionaries to reach you.</small>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group flex-1">
+                    <label for="form-meal-time">Dinner Time</label>
+                    <input type="text" id="form-meal-time" name="meal_time" value="{{ current_set.default_time or '5:00 PM' }}" class="form-control" placeholder="5:00 PM">
+                </div>
+                <div class="form-group flex-1">
+                    <label for="form-location-type">Meal Location / Delivery</label>
+                    <select id="form-location-type" name="location_type" class="form-control">
+                        <option value="home">At our home</option>
+                        <option value="delivery">Drop off at missionary apartment</option>
+                        <option value="church">Meet at Church building</option>
+                        <option value="other">Other location</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" id="address-group">
+                <label for="form-address">Your Address (optional)</label>
+                <input type="text" id="form-address" name="address" class="form-control" placeholder="123 Main St, Apt 4B">
+            </div>
+
+            <div class="form-group">
+                <label for="form-notes">What are you planning to serve? / Notes (optional)</label>
+                <textarea id="form-notes" name="notes" rows="2" class="form-control" placeholder="e.g. Spaghetti, green salad, rolls. Friends/family joining."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="form-host-email">Email Address (optional, for calendar invite)</label>
+                <input type="email" id="form-host-email" name="host_email" class="form-control" placeholder="you@example.com">
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="cancel-modal-btn" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Confirm Sign-Up</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.SET_SLUG = {{ current_set.slug | tojson }};
+    window.INITIAL_YEAR = {{ year }};
+    window.INITIAL_MONTH = {{ month }};
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

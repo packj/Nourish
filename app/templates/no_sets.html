@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}No Calendars Available - Nourish{% endblock %}
+
+{% block content %}
+<div class="empty-state card">
+    <div class="empty-icon">📅</div>
+    <h2>No Missionary Calendars Set Up Yet</h2>
+    <p>An administrator needs to create at least one missionary companionship calendar to begin.</p>
+    <a href="{{ url_for('admin.login') }}" class="btn btn-primary">Go to Admin Setup &rarr;</a>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Nourish{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-header-row">
+        <div>
+            <h1>Admin Dashboard</h1>
+            <p class="text-muted">Manage missionary companionships, view upcoming ward dinners, and configure Google Sheets synchronization.</p>
+        </div>
+        <div class="admin-actions">
+            <a href="{{ url_for('admin.sheets_setup') }}" class="btn btn-outline">📋 Google Sheets Setup Guide</a>
+            <a href="{{ url_for('admin.new_set') }}" class="btn btn-primary">+ Add Missionary Set</a>
+        </div>
+    </div>
+
+    <!-- Missionary Companionships Overview -->
+    <div class="card mb-4">
+        <div class="card-header-flex">
+            <h2>Missionary Companionships ({{ sets|length }})</h2>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Default Time</th>
+                        <th>Google Sheet Sync</th>
+                        <th>Last Synced</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sets %}
+                    <tr>
+                        <td>
+                            {% if s.active %}
+                                <span class="badge badge-success">Active</span>
+                            {% else %}
+                                <span class="badge badge-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ s.name }}</strong>
+                            <div class="text-muted text-xs">/set/{{ s.slug }}</div>
+                        </td>
+                        <td>{{ s.phone or '—' }}</td>
+                        <td>{{ s.default_time or '5:00 PM' }}</td>
+                        <td>
+                            {% if s.sync_mode == 'webhook' %}
+                                {% if s.google_webhook_url %}
+                                    <span class="badge badge-info">Webhook Configured</span>
+                                {% else %}
+                                    <span class="badge badge-warning">Needs Webhook URL</span>
+                                {% endif %}
+                            {% elif s.sync_mode == 'service_account' %}
+                                <span class="badge badge-info">Service Account</span>
+                            {% else %}
+                                <span class="badge badge-secondary">Disabled</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.last_synced_at %}
+                                <span class="text-xs text-muted">{{ s.last_synced_at }}</span>
+                            {% else %}
+                                <span class="text-xs text-muted">Never</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group-sm">
+                                <a href="{{ url_for('admin.set_calendar', set_id=s.id) }}" class="btn btn-xs btn-outline" title="Manage Calendar">📅 Calendar</a>
+                                <a href="{{ url_for('admin.edit_set', set_id=s.id) }}" class="btn btn-xs btn-secondary" title="Edit Settings">⚙️ Edit</a>
+                                <form method="POST" action="{{ url_for('admin.trigger_sync', set_id=s.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-xs btn-primary" title="Sync now to Google Sheets">🔄 Sync</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">No missionary companionships configured. Click "+ Add Missionary Set" above.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Upcoming Dinners Section -->
+    <div class="card">
+        <div class="card-header-flex">
+            <h2>Upcoming Dinners (Next 14 Days)</h2>
+            <span class="badge badge-light">{{ total_upcoming }} Confirmed</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Companionship</th>
+                        <th>Time</th>
+                        <th>Host</th>
+                        <th>Phone</th>
+                        <th>Dining Plan</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in upcoming %}
+                    <tr>
+                        <td class="font-bold text-primary">{{ b.meal_date }}</td>
+                        <td><a href="{{ url_for('admin.set_calendar', set_id=b.set_id) }}">{{ b.set_name }}</a></td>
+                        <td>{{ b.meal_time }}</td>
+                        <td>{{ b.host_name }}</td>
+                        <td>{{ b.host_phone }}</td>
+                        <td>
+                            {% if b.location_type == 'home' %}At Home
+                            {% elif b.location_type == 'delivery' %}Apartment Drop-off
+                            {% elif b.location_type == 'church' %}Church Building
+                            {% else %}{{ b.location_type|capitalize }}
+                            {% endif %}
+                            {% if b.address %}<div class="text-xs text-muted">{{ b.address }}</div>{% endif %}
+                        </td>
+                        <td class="text-sm">{{ b.notes or '—' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No upcoming meals booked in the next 14 days.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
